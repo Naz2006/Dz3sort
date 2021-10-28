@@ -1,0 +1,101 @@
+#define _CRT_SECURE_NO_WARNINGS
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include "funk.h"
+#define LEN 80000
+
+// 112 Кузнецов Назар
+// Нужно реальзовать программу, сортирующую массив по убыванию
+// с помощью пузырька и qsort, и сравнивающую время сортировок
+int main(void) {
+	char generfile[120];		//  Путь к файлу с сгенерированным массивом
+	char sortfile[120];		//  Путь к файлу с отсортированным массивом
+	int n = 5000;			//  Количество элементов массива
+	double mas[LEN];		//  Массив
+	clock_t  start, end;		//  К-во тиков с момента запуска программы
+	int i, j;			//  Индексы
+	float bubtime, qtime;		//  Время сортировки пузырька и qsort
+	float myqtime;			//  Время сортировки рукописной qsort
+	FILE* file;			//  Указатель на файл
+
+	for (j = 0; j < 5; j++) {	//  Программа выполняется 5 раз для n, 2n, 4n, 8n и 16n
+					//  Вводим имя файла, куда сгенерируем массив
+		printf("Enter the path to the file to store the generated array:\n");
+		scanf("%s", generfile);
+
+		if (gener_mas(generfile, n)) {				//  Генерируем массив в файл
+			printf("Error opening file\n");			//  Если не удалось открыть файл выводим оповещение
+			return 1;
+		}
+
+		if (read_file(generfile, mas, n)) {			//  Копируем сгенерированный массив из файла в массив mas
+			printf("Could not open file\n");		//  Если не удалось открыть файл выводим оповещение
+			return 1;
+		}
+		
+		start = clock();					//  В start кладем количество тиков до сортировки
+		bubblesort(mas, n);					//  Сортируем массив с помощью пузырька
+		end = clock();						//  В end кладем количество тиков после сортировки
+		bubtime = (float)(end - start) / CLK_TCK;		//  Запоминаем время сортировки пузырька
+		if (sort_check(mas, n)) {				//  Проверяем, отсортирован ли массив
+			printf("Array was not bubble sorted\n");	//  Если нет, выводим уведомление
+			return 1;					//  и завершаем работу
+		}
+		else printf("Array was bubble sorted\n");		//  Если да, продолжаем
+
+		if (read_file(generfile, mas, n)) {			//  Копируем сгенерированный массив из файла в массив mas
+			printf("Could not open file\n");		//  Если не удалось открыть файл выводим оповещение
+			return 1;
+		}
+		
+		start = clock();					//  В start кладем количество тиков до сортировки
+									//  Запускаем qsort
+		qsort(mas, n, sizeof(double), (int(*)(const void*, const void*))compare);
+		end = clock();						//  В end кладем количество тиков после сортировки
+		qtime = (float)(end - start) / CLK_TCK;			//  Запоминаем время сортировки qsort
+		if (sort_check(mas, n)) {				//  Проверяем, отсортирован ли массив
+			printf("Array was not quick sorted\n");		//  Если нет, выводим уведомление
+			return 1;					//  и завершаем работу
+		}
+		else printf("Array was quick sorted\n");		//  Если да, продолжаем
+
+		if (read_file(generfile, mas, n)) {			//  Копируем сгенерированный массив из файла в массив mas
+			printf("Could not open file\n");		//  Если не удалось открыть файл выводим оповещение
+			return 1;
+		}
+
+		start = clock();					//  В start кладем количество тиков до сортировки
+		qsort_no_rec(mas, 0, n - 1);				//  Запускаем рукописный qsort
+		end = clock();						//  В end кладем количество тиков после сортировки
+		myqtime = (float)(end - start) / CLK_TCK;		//  Запоминаем время сортировки рукописной qsort
+		if (sort_check(mas, n)) {				//  Проверяем, отсортирован ли массив
+			printf("Array was not quick sorted\n");		//  Если нет, выводим уведомление
+			return 1;					//  и завершаем работу
+		}
+		else printf("Array was quick sorted\n");		//  Если да, продолжаем
+
+									//  Вводим имя файла, куда скопируем отсортированный массив
+		printf("Enter the file path to store the sorted array:\n");
+		scanf("%s", sortfile);
+		if ((file = fopen(sortfile, "w")) == 0) {		//  Открываем файл для вывода отсортированного массива
+			printf("Error opening file\n");			//  Если не удалось открыть файл выводим оповещение
+			return 1;
+		}
+
+		for (i = 0; i < n; i++) {
+			fprintf(file, "%lf ", mas[i]);
+			if ((i + 1) % 10 == 0) fprintf(file, "%c", '\n');	//  Делаем отступ после вывода 10 элементов
+		}
+		fclose(file);
+
+		printf("Number of array elements: %d\n", n);
+		printf("Bubble sort time(sec): %.3f\n", bubtime);
+		printf("Q-sort sort time(sec): %.3f\n", qtime);
+		printf("Handwritten q-sort sort time(sec): %.3f\n\n", qtime);
+
+		n *= 2;			//  Увеличиваем количество элементов для следующего захода
+	}
+
+	return 0;
+}
